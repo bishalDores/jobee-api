@@ -1,0 +1,25 @@
+{
+  "name": "jobee-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app",
+    "prod": "SET NODE_ENV=production && nodemon app.js"
+  },
+  "author": "Bishal Peter Dores",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "geocoder": "^0.2.3",
+    "mongoose": "^7.0.0",
+    "node-geocoder": "^4.2.0",
+    "slugify": "^1.6.5",
+    "validator": "^13.9.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.21"
+  }
+}
