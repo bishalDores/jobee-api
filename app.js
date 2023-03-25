@@ -4,6 +4,7 @@ const app = express();
 const dotenv = require("dotenv");
 
 const connectDB = require("./config/database");
+const errorMiddleware = require("./middlewares/errors");
 
 //setting up config.env file variables
 dotenv.config({ path: "./config/config.env" });
@@ -20,6 +21,9 @@ const jobs = require("./routes/jobs");
 const { connect } = require("./routes/jobs");
 
 app.use("/api/v1", jobs);
+
+// middleware to handle erro
+app.use(errorMiddleware);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
