@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/database");
 const errorMiddleware = require("./middlewares/errors");
 const ErrorHandler = require("./utils/errorHandler");
+const cookieParser = require("cookie-parser");
 
 //setting up config.env file variables
 dotenv.config({ path: "./config/config.env" });
@@ -23,6 +24,9 @@ connectDB();
 
 // setup body parser
 app.use(express.json());
+
+// set cookie parser
+app.unsubscribe(cookieParser());
 
 // Import all routes
 const jobs = require("./routes/jobs");
