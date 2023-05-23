@@ -3,6 +3,7 @@ const Job = require("../models/jobs");
 const ErrorHandler = require("../utils/errorHandler");
 const geoCoder = require("../utils/geocoder");
 const APIFilters = require("../utils/apiFilters");
+const path = require("path");
 
 // get all jobs /api/v1/jobs
 
@@ -132,5 +133,68 @@ exports.jobStats = catchAsyncErrors(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: stats,
+  });
+});
+
+// apply to job
+exports.applyToJob = catchAsyncErrors(async (req, res, next) => {
+  const job = await Job.findById(req.params.id).select("+applicantsApplied");
+
+  if (!job) {
+    return next(new ErrorHandler("Job not found", 404));
+  }
+
+  if (job.lastDate < new Date(Date.now())) {
+    return next(new ErrorHandler("You can not apply to this job as date is over.", 400));
+  }
+
+  //check if user has applied before
+  for (let i = 0; i < job.applicantsApplied.length; i++) {
+    if (job.applicantsApplied[i].id === req.user.id) {
+      return next(new ErrorHandler("You have already applied for this job.", 400));
+    }
+  }
+
+  // check the files
+  if (!req.files) {
+    return next(new ErrorHandler("Please upload file.", 400));
+  }
+
+  const file = req.files.file;
+
+  //check file type
+  const supportedFiles = /.docs|.pdf/;
+  if (!supportedFiles.test(path.extname(file.name))) {
+    return next(new ErrorHandler("Please upload document file.", 400));
+  }
+  // check file size
+  if (file.size > process.env.MAX_FILE_SIZE) {
+    return next(new ErrorHandler("Please upload file less than 2MB", 400));
+  }
+
+  // renaming resume
+  file.name = `${req.user.name.replace(" ", "_")}_${job._id}${path.parse(file.name).ext}`;
+
+  file.mv(`${process.env.UPLOAD_PATH}/${file.name}`, async (err) => {
+    if (err) {
+      console.log(err);
+      return next(new ErrorHandler("Resume upload failed", 500));
+    }
+    await Job.findByIdAndUpdate(req.params.id, {
+      $push: {
+        applicantsApplied: {
+          id: req.user.id,
+          resume: file.name,
+        },
+      },
+      new: true,
+      runValidators: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Applied to Job has been successful.",
+      data: file.name,
+    });
   });
 });

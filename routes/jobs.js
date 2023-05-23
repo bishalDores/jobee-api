@@ -1,7 +1,16 @@
 const express = require("express");
 const router = express.Router();
 
-const { getJobs, newJob, searchJobWithRadius, updateJob, deleteJob, getSingleJobByIdAndSlug, jobStats } = require("../controllers/jobsController");
+const {
+  getJobs,
+  newJob,
+  searchJobWithRadius,
+  updateJob,
+  deleteJob,
+  getSingleJobByIdAndSlug,
+  jobStats,
+  applyToJob,
+} = require("../controllers/jobsController");
 const { isAuthenticatedUser, authorizeRoles } = require("../middlewares/auth");
 
 router.route("/jobs").get(getJobs);
@@ -13,5 +22,6 @@ router
   .put(isAuthenticatedUser, authorizeRoles("employer", "admin"), updateJob)
   .delete(isAuthenticatedUser, authorizeRoles("employer", "admin"), deleteJob);
 router.route("/stats/:topic").get(jobStats);
+router.route("/job/:id/apply").put(isAuthenticatedUser, authorizeRoles("user"), applyToJob);
 
 module.exports = router;

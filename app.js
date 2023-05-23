@@ -7,7 +7,7 @@ const connectDB = require("./config/database");
 const errorMiddleware = require("./middlewares/errors");
 const ErrorHandler = require("./utils/errorHandler");
 const cookieParser = require("cookie-parser");
-
+const fileUpload = require("express-fileupload");
 //setting up config.env file variables
 dotenv.config({ path: "./config/config.env" });
 
@@ -26,16 +26,21 @@ connectDB();
 app.use(express.json());
 
 // set cookie parser
-app.unsubscribe(cookieParser());
+app.use(cookieParser());
+
+// handle file upload
+app.use(fileUpload());
 
 // Import all routes
 const jobs = require("./routes/jobs");
 const auth = require("./routes/auth");
+const user = require("./routes/user");
 
 const { connect } = require("./routes/jobs");
 
 app.use("/api/v1", jobs);
 app.use("/api/v1", auth);
+app.use("/api/v1", user);
 
 // handling unhandled routes
 app.all("*", (req, res, next) => {
