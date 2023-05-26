@@ -4,6 +4,7 @@ const ErrorHandler = require("../utils/errorHandler");
 const geoCoder = require("../utils/geocoder");
 const APIFilters = require("../utils/apiFilters");
 const path = require("path");
+const fs = require("fs");
 
 // get all jobs /api/v1/jobs
 
@@ -62,6 +63,9 @@ exports.updateJob = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Job not found", 404));
   }
 
+  if (job.user.toString() !== req.user.id && req.user.role !== "admin") {
+    return next(new ErrorHandler(`User ${req.user.id} is not allowed to update the job`, 400));
+  }
   job = await Job.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
@@ -77,10 +81,21 @@ exports.updateJob = catchAsyncErrors(async (req, res, next) => {
 // delete job => /api/v1/jobs/:id
 
 exports.deleteJob = catchAsyncErrors(async (req, res, next) => {
-  let job = await Job.findById(req.params.id);
+  let job = await Job.findById(req.params.id).select("+applicantsApplied");
 
   if (!job) {
     return next(new ErrorHandler("Job not found", 404));
+  }
+
+  if (job.user.toString() !== req.user.id && req.user.role !== "admin") {
+    return next(new ErrorHandler(`User ${req.user.id} is not allowed to delete the job`, 400));
+  }
+
+  for (let i = 0; i < job.applicantsApplied.length; i++) {
+    let filepath = `${__dirname}/public/uploads/${job.applicantsApplied[i].resume}`.replace("\\controllers", "");
+    fs.unlink(filepath, (err) => {
+      if (err) return console.log(err);
+    });
   }
 
   job = await Job.findByIdAndDelete(req.params.id);
@@ -94,7 +109,10 @@ exports.deleteJob = catchAsyncErrors(async (req, res, next) => {
 // find job by id and slug => /api/v1/jobs/:id/:slug
 
 exports.getSingleJobByIdAndSlug = catchAsyncErrors(async (req, res, next) => {
-  let job = await Job.find({ $and: [{ _id: req.params.id }, { slug: req.params.slug }] });
+  let job = await Job.find({ $and: [{ _id: req.params.id }, { slug: req.params.slug }] }).populate({
+    path: "user",
+    select: "name",
+  });
 
   if (!job || job.length === 0) {
     return next(new ErrorHandler("Job not found", 404));
