@@ -8,6 +8,13 @@ const errorMiddleware = require("./middlewares/errors");
 const ErrorHandler = require("./utils/errorHandler");
 const cookieParser = require("cookie-parser");
 const fileUpload = require("express-fileupload");
+const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
+const xss = require("xss-clean");
+const hpp = require("hpp");
+const cors = require("cors");
+
 //setting up config.env file variables
 dotenv.config({ path: "./config/config.env" });
 
@@ -22,6 +29,9 @@ process.on("uncaughtException", (err) => {
 // Connecting to db
 connectDB();
 
+// setting up http headers
+app.use(helmet());
+
 // setup body parser
 app.use(express.json());
 
@@ -30,6 +40,27 @@ app.use(cookieParser());
 
 // handle file upload
 app.use(fileUpload());
+
+// sanitize data
+app.use(mongoSanitize());
+
+// xss clean
+app.use(xss());
+
+// rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+app.use(cors());
+// Apply the rate limiting middleware to all requests
+app.use(limiter);
+
+// prevent parameter pollution
+app.use(hpp());
 
 // Import all routes
 const jobs = require("./routes/jobs");
